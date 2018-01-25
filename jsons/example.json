@@ -1,0 +1,168 @@
+{
+  "_id" : "59e9f08cde4d6c0ff2673a71",
+  "userId" : "user-guid",
+  "systemId" : "foo",
+  "publishToken" : "789",
+  "systemName" : "System name",
+  "systemDescription" : "Text description of system",
+  "systemType" : "1C|WEB",
+  "scriptLanguage" : "oscript|js",
+  "objectTypes" : [
+      {
+          "objectId" : "bar",
+          "objectName" : "Object name",
+          "preloadScript" : "script containing actions on message body before orchestrating",
+          "preloadActions" : [
+              {
+                  "actionId" : "addPrefix",
+                  "actionParameters" : [
+                      "$.key1",
+                      "prefix_"
+                  ]
+              },
+              {
+                  "actionId" : "addSuffix",
+                  "actionParameters" : [
+                      "$.key2",
+                      "_suffix"
+                  ]
+              },
+              {
+                  "actionId" : "replaceKey",
+                  "actionParameters" : [
+                      "key3",
+                      "newkey3"
+                  ]
+              },
+              {
+                  "actionId" : "addSuffix",
+                  "actionParameters" : [
+                      "$.key4",
+                      "_suffix2"
+                  ]
+              },
+              {
+                  "actionId" : "calculate",
+                  "actionParameters" : [
+                      "$.key5",
+                      "*",
+                      "10"
+                  ]
+              }
+          ],
+          "destinations" : [
+              {
+                  "systemId" : "foo",
+                  "split" : "$..book",
+                  "preloadActions" : [
+                      {
+                          "actionId" : "action-guid-from-reference-1",
+                          "actionParameters" : [
+                              "parameter1",
+                              "parameter2",
+                              "parameter3"
+                          ]
+                      }
+                  ],
+                  "preloadScript" : "script containing actions on message body before loading to system",
+                  "afterloadScript" : "script containing actions on message body after loading to system inside system"
+              },
+              {
+                  "systemId" : "system-guid-3",
+                  "split" : "$",
+                  "preloadScript" : "script containing actions on message body before loading to system"
+              },
+              {
+                  "systemId" : "system-guid-4",
+                  "split" : "$",
+                  "preloadActions" : [
+                      {
+                          "actionId" : "action-guid-from-reference-3",
+                          "actionParameters" : [
+                              "parameter1"
+                          ]
+                      }
+                  ]
+              }
+          ]
+      },
+      {
+        "objectId" : "bar2",
+        "objectName" : "Object name 2",
+        "preloadScript" : "script containing actions on message body before orchestrating",
+        "preloadActions" : [
+            {
+                "actionId" : "addPrefix",
+                "actionParameters" : [
+                    "$.key1",
+                    "prefix_"
+                ]
+            },
+            {
+                "actionId" : "addSuffix",
+                "actionParameters" : [
+                    "$.key2",
+                    "_suffix"
+                ]
+            },
+            {
+                "actionId" : "replaceKey",
+                "actionParameters" : [
+                    "key3",
+                    "newkey3"
+                ]
+            },
+            {
+                "actionId" : "addSuffix",
+                "actionParameters" : [
+                    "$.key4",
+                    "_suffix2"
+                ]
+            },
+            {
+                "actionId" : "calculate",
+                "actionParameters" : [
+                    "$.key5",
+                    "*",
+                    "10"
+                ]
+            }
+        ],
+        "destinations" : [
+            {
+                "systemId" : "foo",
+                "split" : "$..book",
+                "preloadActions" : [
+                    {
+                        "actionId" : "action-guid-from-reference-1",
+                        "actionParameters" : [
+                            "parameter1",
+                            "parameter2",
+                            "parameter3"
+                        ]
+                    }
+                ],
+                "preloadScript" : "script containing actions on message body before loading to system",
+                "afterloadScript" : "script containing actions on message body after loading to system inside system"
+            },
+            {
+                "systemId" : "system-guid-3",
+                "split" : "$",
+                "preloadScript" : "script containing actions on message body before loading to system"
+            },
+            {
+                "systemId" : "system-guid-4",
+                "split" : "$",
+                "preloadActions" : [
+                    {
+                        "actionId" : "action-guid-from-reference-3",
+                        "actionParameters" : [
+                            "parameter1"
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+  ]
+}
