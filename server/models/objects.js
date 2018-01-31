@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 var objects = new Schema({
+  userId : String,
   objectId: String,
   objectName: String,
   preloadScript: String,

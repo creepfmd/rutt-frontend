@@ -26,19 +26,37 @@ class Objects extends Component {
   }
 
   componentDidMount () {
-    this.getObjects();
+    this.getUser();
+  }
+
+	getUser = () => {
+    let _this = this;
+    makeRequest('GET', 'me').then(data => {
+      let response = JSON.parse(data);
+      _this.setState({
+        user : response,
+      });
+      _this.setState({
+        userName : response.name,
+      });
+      this.getObjects();
+    })
+    .catch(err => {
+      if (err.status === 401)
+        window.location.href = `/login`
+    });
   }
 
 	getObjects = () => {
     let _this = this;
-    makeRequest('GET', 'objects').then(data => {
+    makeRequest('GET', 'objects/' + this.state.user._id).then(data => {
       let response = JSON.parse(data);
       _this.setState({
         objects : response.objects,
       });
     })
     .catch(err => {
-      window.location.href = `/login`
+      alert('Error in objects list')
     });
   }
 
@@ -55,7 +73,10 @@ class Objects extends Component {
     if (this.state.addObjectName.trim().length > 0) {
       makeRequest('POST',
       'object/new',
-      {objectId : this.state.addObjectName}).then( data => {
+      {
+        objectId : this.state.addObjectName,
+        userId : this.state.user._id
+      }).then( data => {
       let obj = _this.state.objects;
       obj.push(JSON.parse(data));
       _this.setState({ objects : obj });

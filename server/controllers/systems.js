@@ -9,9 +9,13 @@ export const allSystems = (req, res, next) => {
 };
 
 export const getSystem = (req, res, next) => {
-  Systems.findById(req.params.systemId).lean().exec((err, system) => res.json(
+  Systems.find().where('systemId').equals(req.params.systemId).lean().exec((err, system) => res.json(
     system
   ));
+
+  /* Systems.findById(req.params.systemId).lean().exec((err, system) => res.json(
+    system
+  )); */
 };
 
 

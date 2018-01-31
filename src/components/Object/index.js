@@ -117,7 +117,7 @@ class ChangeObject extends Component {
     let _this = this;
     this.setState({ showProgress : styles.reloadBarOn });
     makeRequest('GET', 'system/' + systemId).then(data => {
-      let s = JSON.parse(data);
+      let s = JSON.parse(data)[0];
       let o = s.objectTypes[objectIndex];
       _this.setState({
           _id : o._id,
@@ -205,7 +205,8 @@ class ChangeObject extends Component {
   }
 
   changeDestination = (item) => {
-    window.location.href = `/system/${item._id}`;
+    window.location.href = `/system/${item.systemId}`;
+    // window.location.href = `/system/${item._id}`;
   }
 
   goObjects = () => {
@@ -416,7 +417,7 @@ class ChangeObject extends Component {
   }
 
   changeSystem = (item) => {
-    window.location.href = `/system/${item.id}`;
+    window.location.href = `/system/${item.systemId}`;
   }
 
   editPreloadParam = (item, index) => {
@@ -476,6 +477,9 @@ class ChangeObject extends Component {
     }
   }
 
+  isExist = (id) => {
+    return this.state.systems.find(item => { return item.systemId === id })
+  }
 
   render() {
     const dialogHeader = styles.dialogHeader;
@@ -504,6 +508,7 @@ class ChangeObject extends Component {
         key={index}
         primaryText={item.systemName}
         secondaryText={item.systemId}
+        disabled={ !this.isExist(item.systemId) }
         onClick={() => this.changeSystem(item)}
         rightIconButton={<IconButton onClick={() => this.deleteDialog(index, 'destination')}><Delete /></IconButton>}>
       </ListItem>

@@ -49,14 +49,13 @@ class ChangeSystem extends Component {
 
   componentDidMount () {
     this.getSystem(this.props.params.systemId);
-    this.getObjects();
   }
 
 	getSystem = (id) => {
     let _this = this;
     this.setState({ showProgress : styles.reloadBarOn });
     makeRequest('GET', 'system/' + id).then(data => {
-      let s = JSON.parse(data);
+      let s = JSON.parse(data)[0];
       _this.setState({
           _id : s._id,
           userId : s.userId,
@@ -68,18 +67,21 @@ class ChangeSystem extends Component {
           scriptLanguage : s.scriptLanguage,
           objectTypes : s.objectTypes,
        });
+       console.log(s);
+       this.getObjects( s.userId );
        _this.setState({ showProgress : styles.reloadBarOff });
     })
     .catch(err => {
       _this.setState({ showProgress : styles.reloadBarOff });
-      window.location.href = `/login`
+      alert('Error in systems list')
+      //window.location.href = `/login`
     });
   }
 
-	getObjects = () => {
+	getObjects = (id) => {
     let _this = this;
     this.setState({ showProgress : styles.reloadBarOn });
-    makeRequest('GET', 'objects').then(data => {
+    makeRequest('GET', 'objects/' + id).then(data => {
       let response = JSON.parse(data);
       _this.setState({
         objects : response.objects,
@@ -198,7 +200,7 @@ class ChangeSystem extends Component {
   }
 
   editObject = (item, index) => {
-    window.location.href = `${this.state._id}/object/${index}`;
+    window.location.href = `${this.state.systemId}/object/${index}`;
   }
 
   deleteDialog = (index, param)  => {
@@ -246,14 +248,15 @@ class ChangeSystem extends Component {
     );
 
     let objectTypes =
-    this.state.objectTypes.map((item, index) =>
+    this.state.objectTypes ? this.state.objectTypes.map((item, index) =>
       <ListItem
         key={index}
         primaryText={item.objectId}
         onClick={() => this.editObject(item, index)}
         rightIconButton={<IconButton onClick={() => this.deleteDialog(index, 'object')}><Delete /></IconButton>}>
       </ListItem>
-    );
+    ) :
+      <ListItem/>;
 
     return (
         <div>

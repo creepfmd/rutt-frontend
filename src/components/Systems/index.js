@@ -41,7 +41,8 @@ class Systems extends Component {
     })
     .catch(err => {
       if (err.status === 401)
-        window.location.href = `/login`
+        alert('Error in systems list')
+        //window.location.href = `/login`
     });
   }
 
@@ -134,7 +135,7 @@ class Systems extends Component {
         key={item._id}
         primaryText={item.systemName ? item.systemName : item.systemId}
         secondaryText={item.systemId}
-        onClick={() => this.changeSystem(item._id)}
+        onClick={() => this.changeSystem(item.systemId)}
         rightIconButton={<IconButton onClick={() => this.deleteSystem(item)}><Delete /></IconButton>}>
       </ListItem>
     );

@@ -1,11 +1,16 @@
 import Obj from '../models/objects';
 
 export const allObjects = (req, res, next) => {
-  Obj.find().lean().exec((err, objects) => res.json(
+  Obj.find().where('userId').equals(req.params.userId).lean().exec((err, objects) => res.json(
     { objects: objects.map(o => ({
       ...o,
     }))}
   ));
+  /* Obj.find().lean().exec((err, objects) => res.json(
+    { objects: objects.map(o => ({
+      ...o,
+    }))}
+  )); */
 };
 
 export const getObject = (req, res, next) => {
@@ -13,7 +18,6 @@ export const getObject = (req, res, next) => {
     obj
   ));
 };
-
 
 export const addObject = (req, res, next) => {
   let obj = new Obj(req.body);

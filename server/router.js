@@ -13,7 +13,7 @@ router.route('/user/:userId').
   put(updateUser).
   delete(deleteUser);
 
-router.route('/objects').get(allObjects);
+router.route('/objects/:userId').get(allObjects);
 
 router.route('/object/:objectId').
   get(getObject).
