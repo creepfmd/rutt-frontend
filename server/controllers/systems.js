@@ -27,7 +27,7 @@ export const addSystem = (req, res, next) => {
 };
 
 export const updateSystem = (req, res, next) => {
-  Systems.where({ _id: req.params.systemId })
+  Systems.where({ systemId: req.params.systemId })
     .update(req.body, (err, system) => res.json(
       system
   ));

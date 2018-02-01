@@ -12,16 +12,19 @@ import Login from './components/Login';
 import Systems from './components/Systems';
 import Users from './components/Users';
 import ChangeUser from './components/User';
+import ChangeDestination from './components/Destination';
 
 const Routes = (props) => (
   <MuiThemeProvider>
     <Router {...props}>
       <Route path="/" component={App} />
-      <Route path="/object/:objectId" component={ChangeObject} />
       <Route path="/objects" component={Objects} />
       <Route path="/systems" component={Systems} />
+      <Route path="/object/:objectId" component={ChangeObject} />
+      <Route path="/object/:objectId/destination/:destinationId" component={ChangeDestination} />
       <Route path="/system/:systemId" component={ChangeSystem} />
       <Route path="/system/:systemId/object/:objectId" component={ChangeObject} />
+      <Route path="/system/:systemId/object/:objectId/destination/:destinationId" component={ChangeDestination} />
       <Route path="/users" component={Users} />
       <Route path="/user/:userId" component={ChangeUser} />
       <Route path="/login" component={Login} />

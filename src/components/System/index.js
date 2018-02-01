@@ -28,6 +28,7 @@ class ChangeSystem extends Component {
       _id : '',
       userId : '',
       systemId : '',
+      zcard : '',
       publishToken : '',
       systemName : '',
       systemDescription : '',
@@ -53,9 +54,12 @@ class ChangeSystem extends Component {
 
 	getSystem = (id) => {
     let _this = this;
+
     this.setState({ showProgress : styles.reloadBarOn });
+
     makeRequest('GET', 'system/' + id).then(data => {
       let s = JSON.parse(data)[0];
+
       _this.setState({
           _id : s._id,
           userId : s.userId,
@@ -66,10 +70,22 @@ class ChangeSystem extends Component {
           systemType : s.systemType,
           scriptLanguage : s.scriptLanguage,
           objectTypes : s.objectTypes,
-       });
-       console.log(s);
-       this.getObjects( s.userId );
-       _this.setState({ showProgress : styles.reloadBarOff });
+      });
+
+      makeRequest('GET', 'redis/zcard/' + s.systemId).then(data => {
+          let d = JSON.parse(data);
+          _this.setState({
+            zcard : d.zcard ? ' [' + d.zcard + ']' : '',
+          });
+      })
+      .catch(err => {
+        if (err.status === 401)
+        console.log('Error get redis zcard')
+      });
+
+      this.getObjects( s.userId );
+
+      _this.setState({ showProgress : styles.reloadBarOff });
     })
     .catch(err => {
       _this.setState({ showProgress : styles.reloadBarOff });
@@ -262,8 +278,11 @@ class ChangeSystem extends Component {
         <div>
           <LinearProgress mode="indeterminate" color="red" style={this.state.showProgress}/>
           <AppBar
-            style={styles.appBarStyle}
-            title={this.state.systemName ? this.state.systemName : this.state.systemId}
+            style={ styles.appBarStyle }
+            title={ this.state.systemName ?
+              'System ' + this.state.systemName + this.state.zcard
+              : 'System ' + this.state.systemId + this.state.zcard
+            }
             iconElementRight={
             <IconMenu
               iconButtonElement={

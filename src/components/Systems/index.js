@@ -33,16 +33,30 @@ class Systems extends Component {
 
 	getSystems = () => {
     let _this = this;
+
     makeRequest('GET', 'systems/' + this.state.user._id).then(data => {
       let response = JSON.parse(data);
       _this.setState({
         systems : response.systems,
       });
+      response.systems.forEach( (element) => {
+        makeRequest('GET', 'redis/zcard/' + element.systemId).then(data => {
+          let s = _this.state.systems;
+          let d = JSON.parse(data);
+          s.find(item => {return item.systemId === element.systemId}).zcard = d.zcard;
+          _this.setState({
+            systems : s,
+          });
+        })
+        .catch(err => {
+          if (err.status === 401)
+          console.log('Error get redis zcard')
+        })
+      })
     })
     .catch(err => {
       if (err.status === 401)
         alert('Error in systems list')
-        //window.location.href = `/login`
     });
   }
 
@@ -134,7 +148,7 @@ class Systems extends Component {
       <ListItem
         key={item._id}
         primaryText={item.systemName ? item.systemName : item.systemId}
-        secondaryText={item.systemId}
+        secondaryText={item.zcard ? item.systemId + ' [' + item.zcard + ']' : item.systemId}
         onClick={() => this.changeSystem(item.systemId)}
         rightIconButton={<IconButton onClick={() => this.deleteSystem(item)}><Delete /></IconButton>}>
       </ListItem>

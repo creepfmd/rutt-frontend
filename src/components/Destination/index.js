@@ -60,11 +60,16 @@ class ChangeObject extends Component {
 
   componentDidMount () {
     this.getUser();
-
-    if (this.props.params.systemId)
-      this.getObjectInside(this.props.params.systemId, this.props.params.objectId)
+    if (this.props.params.systemId) {
+      this.getDestinationInside(
+        this.props.params.systemId,
+        this.props.params.objectId,
+        this.props.params.destinationId)
+      }
     else
-      this.getObject(this.props.params.objectId)
+      this.getDestinationInObject(
+        this.props.params.objectId,
+        this.props.params.destinationId)
   }
 
 	getUser = () => {
@@ -95,40 +100,45 @@ class ChangeObject extends Component {
     });
   }
 
-	getObject = (id) => {
+	getDestinationInObject = (id, destinationIndex) => {
     let _this = this;
     makeRequest('GET', 'object/' + id).then(data => {
       let o = JSON.parse(data);
+      let d = o.destinations[destinationIndex];
       _this.setState({
-          _id : o._id,
-          objectId : o.objectId,
-          objectName : o.objectName,
-          preloadScript : o.preloadScript,
-          preloadActions: o.preloadActions,
-          destinations: o.destinations,
+          id : d.id,
+          systemId : d.systemId,
+          systemName : d.systemName,
+          split : d.split,
+          preloadScript : d.preloadScript,
+          afterloadScript : d.afterloadScript,
+          preloadActions: d.preloadActions,
+          originalObject: o
         });
+      _this.setState({ showProgress : styles.reloadBarOff });
     })
     .catch(err => {
       window.location.href = `/login`
     });
   }
 
-	getObjectInside = (systemId, objectIndex) => {
+	getDestinationInside = (systemId, objectIndex, destinationIndex) => {
     let _this = this;
     this.setState({ showProgress : styles.reloadBarOn });
     makeRequest('GET', 'system/' + systemId).then(data => {
       let s = JSON.parse(data)[0];
       let o = s.objectTypes[objectIndex];
+      let d = o.destinations[destinationIndex];
       _this.setState({
-          _id : o._id,
-          objectId : o.objectId,
-          objectName : o.objectName,
-          preloadScript : o.preloadScript,
-          preloadActions: o.preloadActions,
-          destinations: o.destinations,
-          originalSystem : s,
+          id : d.id,
+          systemId : d.systemId,
+          systemName : d.systemName,
+          split : d.split,
+          preloadScript : d.preloadScript,
+          afterloadScript : d.afterloadScript,
+          preloadActions: d.preloadActions,
+          originalSystem: s
         });
-      console.log(s);
       _this.setState({ showProgress : styles.reloadBarOff });
     })
     .catch(err => {
@@ -139,18 +149,18 @@ class ChangeObject extends Component {
   }
 
   /* Params func */
-  changeObjectId = (event) => {
-    this.setState({objectId : event.target.value});
-    this.setState({ wannaUpdate : true });
-  }
-
-  changeObjectName = (event) => {
-    this.setState({objectName : event.target.value});
-    this.setState({ wannaUpdate : true });
-  }
-
   changePreloadScript = (event) => {
     this.setState({preloadScript : event.target.value});
+    this.setState({ wannaUpdate : true });
+  }
+
+  changeAfterloadScript = (event) => {
+    this.setState({afterloadScript : event.target.value});
+    this.setState({ wannaUpdate : true });
+  }
+
+  changeSplit = (event) => {
+    this.setState({split : event.target.value});
     this.setState({ wannaUpdate : true });
   }
 
@@ -183,29 +193,6 @@ class ChangeObject extends Component {
     this.setState({addPreloadAction : value})
   }
 
-  /* Destination func */
-  addDestination = () => {
-    let d = this.state.destinations;
-    if (this.state.selectedSystem) {
-      d.push({
-        id : this.state.selectedSystem._id,
-        systemId : this.state.selectedSystem.systemId,
-        systemName : this.state.selectedSystem.systemName,
-        split: '',
-        preloadActions : [],
-        preloadScript : '',
-        afterloadScript: ''
-      });
-      this.setState({ destinations : d });
-      this.setState({ selectedSystemErrorText : '' });
-      this.setState({ wannaUpdate : true });
-      this.apply();
-    }
-    else {
-      this.setState({ selectedSystemErrorText : 'This field is required' });
-    }
-  }
-
   goObjects = () => {
     window.location.href = `/objects`;
   }
@@ -218,74 +205,77 @@ class ChangeObject extends Component {
     if (this.props.params.systemId)
       this.applyJSONInside()
     else
-      this.applyJSON()
+      this.applyJSONInsideObject()
   }
 
-  applyJSON = () => {
+  applyJSONInsideObject = () => {
     let _this = this;
-    if (this.state.objectId.trim().length > 0) {
-      this.setState({ showProgress : styles.reloadBarOn });
-      makeRequest('PUT',
-      `object/${this.props.params.objectId}`,
+    let o = this.state.originalObject;
+
+    this.setState({ showProgress : styles.reloadBarOn });
+
+    o.destinations[this.props.params.destinationId] = {
+      systemId : this.state.systemId,
+      systemName : this.state.systemName,
+      split: this.state.split,
+      afterloadScript : this.state.afterloadScript,
+      preloadScript : this.state.preloadScript,
+      preloadActions: this.state.preloadActions
+    };
+
+    makeRequest('PUT',
+    `object/${this.props.params.objectId}`,
       {
-        objectId : this.state.objectId,
-        objectName : this.state.objectName,
-        preloadScript : this.state.preloadScript,
-        preloadActions: this.state.preloadActions,
-        destinations: this.state.destinations,
+        objectId : o.objectId,
+        objectName : o.objectName,
+        preloadScript : o.preloadScript,
+        preloadActions: o.preloadActions,
+        destinations: o.destinations,
       }).then( data => {
-        _this.getObject(_this.props.params.objectId);
+        _this.getDestinationInObject(_this.props.params.objectId, _this.props.params.destinationId);
         _this.setState({ showProgress : styles.reloadBarOff });
         _this.setState({ wannaUpdate : false });
-        _this.setState({ objectIdErrorText : '' });
-      })
-      .catch(err => {
-        window.location.href = `/login`
-      });
-    } else {
-      this.setState({ objectIdErrorText : 'This field is required' });
-    }
+    })
+    .catch(err => {
+      window.location.href = `/login`
+    });
   }
 
   applyJSONInside = () => {
     let _this = this;
-    if (this.state.objectId.trim().length > 0) {
-      this.setState({ showProgress : styles.reloadBarOn });
+    let o = this.state.originalSystem.objectTypes;
 
-      let o = this.state.originalSystem.objectTypes;
+    this.setState({ showProgress : styles.reloadBarOn });
 
-      o[this.props.params.objectId] = {
-        objectId : this.state.objectId,
-        objectName : this.state.objectName,
-        preloadScript : this.state.preloadScript,
-        preloadActions: this.state.preloadActions,
-        destinations: this.state.destinations,
-      };
+    o[this.props.params.objectId].destinations[this.props.params.destinationId] = {
+      systemId : this.state.systemId,
+      systemName : this.state.systemName,
+      split: this.state.split,
+      afterloadScript : this.state.afterloadScript,
+      preloadScript : this.state.preloadScript,
+      preloadActions: this.state.preloadActions
+    };
 
-      makeRequest('PUT',
-      `system/${this.props.params.systemId}`,
-      {
-        userId : this.state.originalSystem.userId,
-        systemId : this.state.originalSystem.systemId,
-        publishToken : this.state.originalSystem.publishToken,
-        systemName : this.state.originalSystem.systemName,
-        systemDescription : this.state.originalSystem.systemDescription,
-        systemType : this.state.originalSystem.systemType,
-        scriptLanguage : this.state.originalSystem.scriptLanguage,
-        objectTypes : o
-      }).then( data => {
-        _this.getObjectInside(_this.props.params.systemId, _this.props.params.objectId);
-        _this.setState({ showProgress : styles.reloadBarOff });
-        _this.setState({ wannaUpdate : false });
-        _this.setState({ objectIdErrorText : '' });
-      })
-      .catch(err => {
-        _this.setState({ showProgress : styles.reloadBarOff });
-        window.location.href = `/login`
-      })
-    } else {
-      this.setState({ objectIdErrorText : 'This field is required' });
-    }
+    makeRequest('PUT',
+    `system/${this.props.params.systemId}`,
+    {
+      userId : this.state.originalSystem.userId,
+      systemId : this.state.originalSystem.systemId,
+      publishToken : this.state.originalSystem.publishToken,
+      systemName : this.state.originalSystem.systemName,
+      systemDescription : this.state.originalSystem.systemDescription,
+      systemType : this.state.originalSystem.systemType,
+      scriptLanguage : this.state.originalSystem.scriptLanguage,
+      objectTypes : o
+    }).then( data => {
+      _this.getDestinationInside(_this.props.params.systemId, _this.props.params.objectId, _this.props.params.destinationId);
+      _this.setState({ showProgress : styles.reloadBarOff });
+      _this.setState({ wannaUpdate : false });
+    })
+    .catch(err => {
+      _this.setState({ showProgress : styles.reloadBarOff });
+      alert('System update error')
+    })
   }
 
   casePreload = (index) => {
@@ -413,11 +403,8 @@ class ChangeObject extends Component {
     return this.state.showProgress ? `<LinearProgress mode="indeterminate" color"red"/>` : ''
   }
 
-  changeSystem = (item, index) => {
-    if (this.props.params.systemId)
-      window.location.href = `/system/${this.props.params.systemId}/object/${this.props.params.objectId}/destination/${index}`
-    else
-      window.location.href = `/object/${this.props.params.objectId}/destination/${index}`
+  changeSystem = (item) => {
+    window.location.href = `/system/${item.systemId}`;
   }
 
   editPreloadParam = (item, index) => {
@@ -477,10 +464,6 @@ class ChangeObject extends Component {
     }
   }
 
-  isExist = (id) => {
-    return this.state.systems.find(item => { return item.systemId === id })
-  }
-
   render() {
     const dialogHeader = styles.dialogHeader;
 
@@ -491,25 +474,6 @@ class ChangeObject extends Component {
         primaryText={item.actionId}
         onClick={() => this.changeAction(item, index)}
         rightIconButton={<IconButton onClick={() => this.deleteDialog(index, 'action')}><Delete /></IconButton>}>
-      </ListItem>
-    );
-
-    let systems =
-    this.state.systems.map((item, index) =>
-        <MenuItem
-          key={index}
-          value={item}
-          primaryText={item.systemName ? item.systemName : item.systemId} />
-    );
-
-    let destinations =
-    this.state.destinations.map((item, index) =>
-      <ListItem
-        key={index}
-        primaryText={item.systemName}
-        secondaryText={item.systemId}
-        onClick={() => this.changeSystem(item, index)}
-        rightIconButton={<IconButton onClick={() => this.deleteDialog(index, 'destination')}><Delete /></IconButton>}>
       </ListItem>
     );
 
@@ -528,7 +492,7 @@ class ChangeObject extends Component {
       <div>
         <LinearProgress mode="indeterminate" color="red" style={this.state.showProgress}/>
         <AppBar
-          title={'Object ' + this.state.objectId}
+          title={this.state.systemName ? 'Destination ' + this.state.systemName : 'Destination ' + this.state.systemId}
           style={styles.appBarStyle}
           iconElementRight={this.props.params.systemId ?
             <IconMenu
@@ -559,22 +523,33 @@ class ChangeObject extends Component {
         />
         <Card style={styles.cardStyle}>
             <TextField
-              floatingLabelText="objectId"
-              errorText={this.state.objectIdErrorText}
-              onChange={this.changeObjectId}
-              value={this.state.objectId}
+              floatingLabelText="systemId"
+              disabled={true}
+              value={this.state.systemId}
               fullWidth={true}
             />
             <TextField
-              floatingLabelText="objectName"
-              onChange={this.changeObjectName}
-              value={this.state.objectName}
+              floatingLabelText="systemName"
+              disabled={true}
+              value={this.state.systemName}
               fullWidth={true}
             />
             <TextField
               floatingLabelText="preloadScript"
               onChange={this.changePreloadScript}
               value={this.state.preloadScript}
+              fullWidth={true}
+            />
+            <TextField
+              floatingLabelText="afterloadScript"
+              onChange={this.changeAfterloadScript}
+              value={this.state.afterloadScript}
+              fullWidth={true}
+            />
+            <TextField
+              floatingLabelText="split"
+              onChange={this.changeSplit}
+              value={this.state.split}
               fullWidth={true}
             />
             <h3>preloadActions list</h3>
@@ -594,20 +569,6 @@ class ChangeObject extends Component {
               </SelectField>
               <FlatButton onClick={this.addAction} secondary={true} label="Add preload action" />
             </List>
-            <h3>Destinations list</h3>
-            <List>{destinations}
-            </List>
-            <SelectField
-                floatingLabelText="Select destination system"
-                value={this.state.selectedSystem}
-                onChange={this.handleSelectSystem}
-                errorText={this.state.selectedSystemErrorText}
-                fullWidth={true}
-              >
-              {systems}
-            </SelectField>
-            <br/>
-            <FlatButton onClick={this.addDestination} secondary={true} label="Add destination" />
           </Card>
 
           <Dialog

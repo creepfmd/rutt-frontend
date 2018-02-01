@@ -11,6 +11,7 @@ var objects = new Schema({
   }],
   destinations: [{
     systemId: String,
+    systemName: String,
     split: String,
     preloadScript: String,
     afterloadScript: String,

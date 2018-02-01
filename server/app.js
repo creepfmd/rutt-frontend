@@ -7,11 +7,13 @@ const bodyParser = require('body-parser');
 const passport = require('passport');
 const BasicStrategy = require('passport-http').BasicStrategy;
 const cors = require('cors');
+const redis = require('redis');
 
 require('dotenv').config();
 
 import router from './router';
 import User from './models/users';
+//import { initConnection, publish, apiParams, consume, ack, nack }  from './api';
 
 const app = express();
 
@@ -19,6 +21,21 @@ mongoose.Promise = global.Promise;
 mongoose.connect(process.env.MONGO_URL, { useMongoClient: true })
   .then(() =>  console.log('Mongo connection succesful'))
   .catch((err) => console.error(err));
+
+
+const redisClient = redis.createClient({ url: process.env.REDIS_URL});
+
+redisClient.on("error", (err) => {
+  console.error("Redis Error " + err)
+});
+
+redisClient.on("connect", () => {
+  console.log("Redis connection succesful")
+});
+
+redisClient.on("monitor", (time, args, raw_reply) => {
+  console.log(time + ": " + args)
+});
 
 passport.use(new BasicStrategy( (username, password, done) => {
     User.findOne({ name: username }, function(err, user) {
@@ -48,17 +65,39 @@ app.get('/api/v1/me', cors(), passport.authenticate('basic', { session: false })
   res.json(req.user)
 });
 
-app.use(express.static(path.resolve(__dirname, '..', 'build')));
-
-app.get('/', passport.authenticate('basic'), (req, res) => {
-  if (req.user)
-    res.json(req.user)
-  else
-    res.redirect('/login')
+app.get('/api/v1/redis/zcard/:systemId', cors(), passport.authenticate('basic', { session: false }), (req, res) => {
+  if (redisClient) {
+    redisClient.zcard(req.params.systemId + ".outgoing",  (err, reply) => {
+      res.json({ zcard: reply ? reply.toString() : null })
+    })
+  }
+  else res.json({ zcard: null })
 });
+
+app.use(express.static(path.resolve(__dirname, '..', 'build')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.resolve(__dirname, '..', 'build', 'index.html'));
 });
+
+// API module example ++++++++++++++++++++++++++++++++++++++++++++++++++
+/* initConnection('http://docker.lan.smclinic.ru', 'a97c4874-05c7-1be1-61d1-6f103a0620cb');
+
+publish('/buh1/foo').then(r => {
+  console.log(r)
+});
+
+consume('/buh2').then(r => {
+  console.log(r)
+});
+
+ack({ id: '123' }).then(r => {
+  console.log(r)
+})
+
+nack({ id: '123' }, false).then(r => {
+  console.log(r)
+}) */
+// API module example ------------------------------------------------
 
 module.exports = app;
