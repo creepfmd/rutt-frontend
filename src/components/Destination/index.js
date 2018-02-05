@@ -54,7 +54,8 @@ class ChangeObject extends Component {
       objectIdErrorText : '',
       originalSystem: null,
       openParamDialog : false,
-      editPreloadActionParamAddDisabled : false
+      editPreloadActionParamAddDisabled : false,
+      split: '$.*'
     };
   }
 

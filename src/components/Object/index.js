@@ -191,7 +191,7 @@ class ChangeObject extends Component {
         id : this.state.selectedSystem._id,
         systemId : this.state.selectedSystem.systemId,
         systemName : this.state.selectedSystem.systemName,
-        split: '',
+        split: '$.*',
         preloadActions : [],
         preloadScript : '',
         afterloadScript: ''
