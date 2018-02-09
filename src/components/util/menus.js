@@ -18,6 +18,8 @@ export class menuSystems extends Component {
         anchorOrigin={{horizontal: 'right', vertical: 'top'}}
       >
         <MenuItem onClick={() => this.defaultObjects} primaryText="Default Objects" />
+        <MenuItem onClick={() => this.import} primaryText="Import" />
+        <MenuItem onClick={() => this.export} primaryText="Export" />
         <MenuItem onClick={() => this.logout} primaryText="Logout" />
       </IconMenu>
     );

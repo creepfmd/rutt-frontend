@@ -11,6 +11,10 @@ import IconButton from 'material-ui/IconButton';
 import IconMenu from 'material-ui/IconMenu';
 import MenuItem from 'material-ui/MenuItem';
 import MoreVertIcon from 'material-ui/svg-icons/navigation/more-vert';
+import FileDownload from 'react-file-download';
+import Upload from 'material-ui-upload/Upload';
+import base64 from 'base-64';
+import utf8 from 'utf8';
 
 import { makeRequest, logout, styles } from '../util';
 
@@ -21,8 +25,12 @@ class Systems extends Component {
 
   state = {
     systems: [],
+    importLog: [],
     addSystemName: '',
     open: false,
+    openImport: false,
+    openImportLog: false,
+    importFileName: '',
     addSystemErrorText : '',
     userName : ''
   }
@@ -78,6 +86,77 @@ class Systems extends Component {
     });
   }
 
+  goExport = () => {
+    let s = this.state.systems;
+    s.forEach(i => { delete i._id; delete i.zcard; delete i.__v });
+    FileDownload(JSON.stringify(s, null, ' '), 'systems.json');
+  }
+
+  goImport = (event) => {
+    this.setState({openImport: true});
+  }
+
+  handleCloseImport = () => {
+    this.setState({openImport: false});
+  }
+
+  handleCloseImportLog = () => {
+    this.setState({openImportLog: false});
+  }
+
+  onFileLoadSystems = (e, file) => {
+    let _this = this;
+
+    let s = JSON.parse(utf8.decode(base64.decode(e.target.result.split(',')[1])));
+
+    let il = s.map(item => (item.systemId ? {
+      systemName: item.systemName ? item.systemName : item.systemId,
+      systemId: item.systemId,
+      description: 'checking...',
+    } : null ));
+
+    this.setState({ openImport: false });
+    this.setState({ importFileName: file.name });
+    this.setState({ openImportLog: true });
+    this.setState({ importLog: il });
+
+    il.forEach((item, index) => {
+      if (item) {
+        if (this.state.systems.find(i => i.systemId === item.systemId)) {
+          item.description = 'system exists'
+        }
+      }
+    });
+    this.setState({ importLog: il });
+    il.forEach((item, index) => {
+      if (item) {
+        if (item.description === 'checking...') {
+          makeRequest('POST',
+            'system/new',
+            { userId : this.state.user._id })
+          .then(data => {
+            let d = JSON.parse(data);
+            makeRequest('PUT',
+            `system/${d.systemId}`, s[index]
+            ).then( dataput => {
+              let systems = _this.state.systems;
+              systems.push(s[index]);
+              item.description = 'successfully imported';
+              _this.setState({systems : systems});
+            })
+            .catch(err => {
+              console.log('Update system error')
+            })
+          })
+          .catch(err => {
+            console.log('Add system error')
+          })
+        }
+      }
+    });
+    this.setState({ importLog: il });
+  }
+
   goObjects = () => {
     window.location.href = `/objects`;
   }
@@ -91,23 +170,18 @@ class Systems extends Component {
 
   addSystem = () => {
     let _this = this;
-    //if (this.state.addSystemName.trim().length > 0) {
-      makeRequest('POST',
-        'system/new',
-        { userId : this.state.user._id }).then( data => {
-        let systems = _this.state.systems;
-        systems.push(JSON.parse(data));
-        _this.setState({systems : systems});
-        _this.setState({addSystemName : ''});
-        _this.setState({ addSystemErrorText : '' });
-      })
-      .catch(err => {
-        if (err.status === 401)
-          window.location.href = `/login`
-      })
-    /*} else {
-      this.setState({ addSystemErrorText : 'This field is required' });
-    }*/
+    makeRequest('POST',
+      'system/new',
+      { userId : this.state.user._id })
+    .then(data => {
+      let systems = _this.state.systems;
+      systems.push(JSON.parse(data));
+      _this.setState({systems : systems});
+    })
+    .catch(err => {
+      if (err.status === 401)
+        window.location.href = `/login`
+    })
   }
 
   deleteSystem = (event) => {
@@ -150,7 +224,19 @@ class Systems extends Component {
         primaryText={item.systemName ? item.systemName : item.systemId}
         secondaryText={item.zcard ? item.systemId + ' [' + item.zcard + ']' : item.systemId}
         onClick={() => this.changeSystem(item.systemId)}
-        rightIconButton={<IconButton onClick={() => this.deleteSystem(item)}><Delete /></IconButton>}>
+        rightIconButton={<IconButton onClick={() => this.deleteSystem(item)}><Delete /></IconButton>}
+      >
+      </ListItem>
+    );
+
+    let importLog = this.state.importLog.length === 0 ? 'Unknown JSON file' :
+    this.state.importLog.map((item, index) =>
+      <ListItem
+        key={index}
+        primaryText={item ? item.systemName : 'Unknown system'}
+        secondaryText={item ? item.description : ''}
+        disabled={true}
+      >
       </ListItem>
     );
 
@@ -168,6 +254,8 @@ class Systems extends Component {
               anchorOrigin={{horizontal: 'right', vertical: 'top'}}
             >
             <MenuItem onClick={this.goObjects} primaryText="Default Objects" />
+            <MenuItem onClick={this.goImport} primaryText="Import" />
+            <MenuItem onClick={this.goExport} primaryText="Export" />
             <MenuItem onClick={this.goUsers} primaryText={this.state.userName === "admin" ? "Users" : "Profile"} />
             <MenuItem onClick={logout} primaryText="Log out" />
           </IconMenu>}
@@ -197,6 +285,36 @@ class Systems extends Component {
           modal={true}
           open={this.state.open}>
           Are you sure?
+        </Dialog>
+        <Dialog
+          title={ 'Import systems' }
+          actions={[
+            <FlatButton
+              label="Close"
+              primary={true}
+              onClick={this.handleCloseImport}
+            />,
+          ]}
+          modal={true}
+          open={this.state.openImport}>
+            <Upload
+              key="1"
+              label="Import systems"
+              onFileLoad={this.onFileLoadSystems}
+            />
+        </Dialog>
+        <Dialog
+          title={ 'Import file ' + this.state.importFileName }
+          actions={[
+            <FlatButton
+              label="Close log"
+              primary={true}
+              onClick={this.handleCloseImportLog}
+            />,
+          ]}
+          modal={true}
+          open={this.state.openImportLog}>
+          <List>{importLog}</List>
         </Dialog>
       </div>
     );

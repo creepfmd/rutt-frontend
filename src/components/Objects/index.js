@@ -12,6 +12,10 @@ import IconButton from 'material-ui/IconButton';
 import IconMenu from 'material-ui/IconMenu';
 import MenuItem from 'material-ui/MenuItem';
 import MoreVertIcon from 'material-ui/svg-icons/navigation/more-vert';
+import FileDownload from 'react-file-download';
+import Upload from 'material-ui-upload/Upload';
+import base64 from 'base-64';
+import utf8 from 'utf8';
 import { makeRequest, logout, styles } from '../util';
 
 class Objects extends Component {
@@ -20,6 +24,10 @@ class Objects extends Component {
 
   state = {
     objects: [],
+    importLog: [],
+    addSystemName: '',
+    openImport: false,
+    openImportLog: false,
     addObjectName: '',
     open: false,
     addErrorText : ''
@@ -58,6 +66,79 @@ class Objects extends Component {
     .catch(err => {
       alert('Error in objects list')
     });
+  }
+
+  goExport = () => {
+    let o = this.state.objects;
+    o.forEach(i => { delete i._id; delete i.__v });
+    FileDownload(JSON.stringify(o, null, ' '), 'objects.json');
+  }
+
+  goImport = (event) => {
+    this.setState({openImport: true});
+  }
+
+  handleCloseImport = () => {
+    this.setState({openImport: false});
+  }
+
+  handleCloseImportLog = () => {
+    this.setState({openImportLog: false});
+  }
+
+  onFileLoadObjects = (e, file) => {
+    let _this = this;
+
+    let o = JSON.parse(utf8.decode(base64.decode(e.target.result.split(',')[1])));
+
+    let il = o.map(item => (item.objectId ? {
+      objectId: item.objectId,
+      description: 'checking...',
+    } : null ));
+
+    this.setState({ openImport: false });
+    this.setState({ importFileName: file.name });
+    this.setState({ openImportLog: true });
+    this.setState({ importLog: il });
+
+    il.forEach((item, index) => {
+      if (item) {
+        if (this.state.objects.find(i => i.objectId === item.objectId)) {
+          item.description = 'object exists'
+        }
+      }
+    });
+    this.setState({ importLog: il });
+    il.forEach((item, index) => {
+      if (item) {
+        if (item.description === 'checking...') {
+          makeRequest('POST',
+            'object/new', {
+              objectId : item.objectId,
+              userId : this.state.user._id
+            })
+          .then(data => {
+            let d = JSON.parse(data);
+            makeRequest('PUT',
+            `object/${d._id}`, o[index]
+            ).then( dataput => {
+              let objects = _this.state.objects;
+              o[index]._id = d._id;
+              objects.push(o[index]);
+              item.description = 'successfully imported';
+              _this.setState({objects : objects});
+            })
+            .catch(err => {
+              console.log('Update object error')
+            })
+          })
+          .catch(err => {
+            console.log('Add object error')
+          })
+        }
+      }
+    });
+    this.setState({ importLog: il });
   }
 
   goSystem = () => {
@@ -130,6 +211,17 @@ class Objects extends Component {
       </ListItem>
     );
 
+    let importLog = this.state.importLog.length === 0 ? 'Unknown JSON file' :
+    this.state.importLog.map((item, index) =>
+      <ListItem
+        key={index}
+        primaryText={item ? item.objectId : 'Unknown object'}
+        secondaryText={item ? item.description : ''}
+        disabled={true}
+      >
+      </ListItem>
+    );
+
     return (
       <div>
         <AppBar
@@ -144,6 +236,8 @@ class Objects extends Component {
               anchorOrigin={{horizontal: 'right', vertical: 'top'}}
             >
             <MenuItem onClick={this.goSystem} primaryText="All Systems" />
+            <MenuItem onClick={this.goImport} primaryText="Import" />
+            <MenuItem onClick={this.goExport} primaryText="Export" />
             <MenuItem onClick={logout} primaryText="Logout" />
           </IconMenu>}
           iconElementLeft={<IconButton
@@ -182,6 +276,36 @@ class Objects extends Component {
           modal={true}
           open={this.state.open}>
           Are you sure?
+        </Dialog>
+        <Dialog
+          title={ 'Import oblects' }
+          actions={[
+            <FlatButton
+              label="Close"
+              primary={true}
+              onClick={this.handleCloseImport}
+            />,
+          ]}
+          modal={true}
+          open={this.state.openImport}>
+            <Upload
+              key="1"
+              label="Import objects"
+              onFileLoad={this.onFileLoadObjects}
+            />
+        </Dialog>
+        <Dialog
+          title={ 'Import file ' + this.state.importFileName }
+          actions={[
+            <FlatButton
+              label="Close log"
+              primary={true}
+              onClick={this.handleCloseImportLog}
+            />,
+          ]}
+          modal={true}
+          open={this.state.openImportLog}>
+          <List>{importLog}</List>
         </Dialog>
       </div>
     );
