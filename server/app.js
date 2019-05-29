@@ -81,7 +81,7 @@ app.get('*', (req, res) => {
 });
 
 // API module example ++++++++++++++++++++++++++++++++++++++++++++++++++
-/* initConnection('http://docker.lan.smclinic.ru', 'a97c4874-05c7-1be1-61d1-6f103a0620cb');
+/* initConnection('http://docker.rutt.io', 'a97c4874-05c7-1be1-61d1-6f103a0620cb');
 
 publish('/buh1/foo').then(r => {
   console.log(r)
